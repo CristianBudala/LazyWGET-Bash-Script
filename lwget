@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# LazyWGET - Lazy, recursive HTML file download
+# Authors: Cristian Budala, Ruslan Gaitur
+# Date: 2025
+
+# Configuration files
+DOWNLOADS_DIR="./lwget_cache/downloads"
+
+download_file(){
+	local url="$1"
+	local output_file="$2"
+	wget -q -O "$output_file" "$url" # no output (quiet), writes documents to file: -O
+}
+
+main(){
+	if [ $# -eq 0 ]; then	# $# stands for the number of arguments entered by the user
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+
+	local url="$1"
+	mkdir -p "$DOWNLOADS_DIR"
+	local output_file="$DOWNLOADS_DIR/downloaded.html"	#./lwget_cache/downloads/downloaded.html
+
+	download_file "$url" "$output_file"
+	echo "Download complete! See: $DOWNLOADS_DIR"
+
+}
+
+main "$@"	#calls the main function and passes all command-line arguments to it
