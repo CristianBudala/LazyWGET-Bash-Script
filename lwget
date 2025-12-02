@@ -2,15 +2,36 @@
 
 # LazyWGET - Lazy, recursive HTML file download
 # Authors: Cristian Budala, Ruslan Gaitur
-# Date: 2025
+# Date: 12.2025
 
 # Configuration files
-DOWNLOADS_DIR="./lwget_cache/downloads"
+WORK_DIR="./lwget_cache"
+DOWNLOADS_DIR="$WORK_DIR/downloads"
+METADATA_DIR="$WORK_DIR/.metadata" # hidden file
+PROMISES_FILE="$METADATA_DIR/promises.txt"
+LEVEL_FILE="$METADATA_DIR/current_level"
+
+mkdir -p "$DOWNLOADS_DIR"
+mkdir -p "$METADATA_DIR"
 
 download_file(){
 	local url="$1"
 	local output_file="$2"
 	wget -q -O "$output_file" "$url" # no output (quiet), writes documents to file: -O
+}
+
+extract_links(){
+    local filename="$1"
+	# from the html file, grep prints to stdout only the matching part (-o) of links (not the entire html declaration of the object), splits it by " and prints the second argument
+    grep -o 'href="http[^"]*"' "$filename" | awk -F'"' '{print $2}'
+}
+
+save_promises(){
+	local level="$1"
+	local urls="$2"
+	while read -r url; do
+		echo "$level|$url" >> "$PROMISES_FILE"
+	done <<< "$urls"
 }
 
 main(){
@@ -20,12 +41,20 @@ main(){
 	fi
 
 	local url="$1"
-	mkdir -p "$DOWNLOADS_DIR"
 	local output_file="$DOWNLOADS_DIR/downloaded.html"	#./lwget_cache/downloads/downloaded.html
 
 	download_file "$url" "$output_file"
-	echo "Download complete! See: $DOWNLOADS_DIR"
+	echo ""
+	echo "Download complete!"
+	echo ""
+	
+	local urls=$(extract_links "$output_file")
+	echo "Found links:"
+	echo "$urls"
+	echo ""
 
+	save_promises "1" "$urls"
+	echo "Promises saved to $PROMISES_FILE"
 }
 
 main "$@"	#calls the main function and passes all command-line arguments to it
