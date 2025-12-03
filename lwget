@@ -34,13 +34,27 @@ save_promises(){
 	done <<< "$urls"
 }
 
+init_level(){
+	if [ ! -f "$LEVEL_FILE" ]; then
+		echo "0" > "$LEVEL_FILE"
+		echo "Initialized links extraction at level 0"
+	fi
+}
+
+current_level(){
+	# Read the number from LEVEL_FILE
+	# Also make main() work along with it
+}
+
 main(){
 	if [ $# -eq 0 ]; then	# $# stands for the number of arguments entered by the user
+		echo "You must enter an URL!"
 		echo "Usage: $0 <URL>"
 		exit 1
 	fi
 
 	local url="$1"
+	
 	local output_file="$DOWNLOADS_DIR/downloaded.html"	#./lwget_cache/downloads/downloaded.html
 
 	download_file "$url" "$output_file"
@@ -57,4 +71,5 @@ main(){
 	echo "Promises saved to $PROMISES_FILE"
 }
 
+init_level
 main "$@"	#calls the main function and passes all command-line arguments to it
