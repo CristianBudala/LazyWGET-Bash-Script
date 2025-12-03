@@ -1,3 +1,5 @@
+Class: Introduction to Operating Systems (UNIX)
+
 Project Requirements:
 
 Write a shell program (script) named lwget that uses the wget command NON-RECURSIVELY to download 
