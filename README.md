@@ -21,7 +21,7 @@ Initially, we check if the user has provided the '-h' / '--help' argument, in wh
 
 During normal script operation, we begin by checking the current depth level and extracting the next level of HTML files. To download the files, we used the 'wget' command in non-recursive mode, using the 'quiet' argument (no output to stdout) and the file output argument. To extract links, we used the 'grep' command piped through 'awk' to retrieve only the URLs.
 
-The depth level is initialized to 0 via the 'init_level' function and incremented within the 'main' function.
+The depth level is initialized to 0 via the 'init' function and incremented within the 'main' function.
 
 === RO ===
 1. Structura fișierelor
@@ -46,6 +46,6 @@ De asemenea, dacă utilizatorul nu a introdus niciun argument, programul printea
 
    În cazul utilizării normale a scriptului, începem prin a verifica nivelul curent de adâncime și a extrage urmatorul nivel de fișiere HTML. Pentru descărcarea fișierelor am utilizat comanda 'wget' în mod nerecursiv, cu argumentele quiet (fără output la stdout) și de scriere în fișier. Pentru extragerea link-urilor am folosit comanda 'grep' cu pipeline prin 'awk', astfel încât să preluăm doar URL-urile.
 
-Nivelul de adâncime este inițializat cu 0 prin funcția 'init_level' și incrementat în funcția 'main'. 
+Nivelul de adâncime este inițializat la 0 prin funcția 'init' și incrementat în funcția 'main'. 
 
 
