@@ -117,18 +117,13 @@ parse_promises() {
 		url=$item
 		if [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg)$ ]]; then 
 			resource_name=$(basename "$url")
-			
 			local assets_dir="$DOWNLOADS_DIR/assets"
 			mkdir -p "$assets_dir"
-			
 			wget -q -nc -x -P "$assets_dir" "$url"
 		else 
 			local output_file="$DOWNLOADS_DIR/downloaded.html"
-
 			download_file "$url" "$output_file"
-
 			local urls=$(extract_links "$output_file")
-
 			save_promises "$(get_current_level)" "$urls"
 		fi
 	}
@@ -143,7 +138,6 @@ main(){
 	local url="$1"
 	local current_level=$(get_current_level)
 	echo "Current level: $current_level"
-
 
 	if [ "$current_level" -eq 0  ]; then
 		if [ $# -eq 0 ]; then
