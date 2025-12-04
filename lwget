@@ -22,7 +22,7 @@ WORK_DIR="./lwget_cache"
 DOWNLOADS_DIR="$WORK_DIR/downloads"
 METADATA_DIR="$WORK_DIR/.metadata" # hidden file
 PROMISES_FILE="$METADATA_DIR/promises.txt"
-LEVEL_FILE="$METADATA_DIR/current_level"
+LEVEL_FILE="$METADATA_DIR/current_level.txt"
 
 mkdir -p "$DOWNLOADS_DIR"
 mkdir -p "$METADATA_DIR"
@@ -51,6 +51,7 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 fi
 
 download_file(){
+	< $DOWNLOADS_DIR
 	local url="$1"
 	local output_file="$2"
 	wget -q -O "$output_file" "$url" # no output (quiet), writes documents to file: -O
@@ -62,23 +63,46 @@ extract_links(){
     grep -o 'href="http[^"]*"' "$filename" | awk -F'"' '{print $2}'
 }
 
+get_current_level(){
+	cat < $LEVEL_FILE
+}
+
 save_promises(){
-	local level="$1"
+	local level=$(get_current_level)
 	local urls="$2"
 	while read -r url; do
 		echo "$level|$url" >> "$PROMISES_FILE"
 	done <<< "$urls"
 }
 
-init_level(){
-	if [ ! -f "$LEVEL_FILE" ]; then
-		echo "0" > "$LEVEL_FILE"
-		echo "Initialized links extraction at level 0"
+reset_meta() {
+	if [ -f "$LEVEL_FILE" ]; then
+		rm "$LEVEL_FILE"
+		echo "Cleared level meta before initialization"
 	fi
+
+	if [ -f "$PROMISES_FILE" ]; then
+		rm "$PROMISES_FILE"
+		echo -e "Cleared promises meta before initialization \n"
+	fi
+
+	exit 0
 }
 
-get_current_level(){
-	cat "$LEVEL_FILE"
+if [ "$1" == "-r" ]; then
+	reset_meta
+fi
+
+init(){
+	if [ ! -f "$LEVEL_FILE" ]; then
+		echo "0" > "$LEVEL_FILE"
+		echo "Initialized level 0"
+	fi
+
+	if [ ! -f "$PROMISES_FILE" ]; then
+		touch "$PROMISES_FILE"
+		echo -e "Initialized promises at level 0 \n"
+	fi
 }
 
 get_promises_for_level(){
@@ -86,25 +110,54 @@ get_promises_for_level(){
 	grep "^$level|" "$PROMISES_FILE" | cut -d "|" -f 2
 }
 
+parse_promises() {
+	for item in $(get_promises_for_level $(($(get_current_level) - 1)))
+	{
+		echo $item
+		url=$item
+		if [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg)$ ]]; then 
+			resource_name=$(basename "$url")
+			
+			local assets_dir="$DOWNLOADS_DIR/assets"
+			mkdir -p "$assets_dir"
+			
+			wget -q -nc -x -P "$assets_dir" "$url"
+		else 
+			local output_file="$DOWNLOADS_DIR/downloaded.html"
+
+			download_file "$url" "$output_file"
+
+			local urls=$(extract_links "$output_file")
+
+			save_promises "$(get_current_level)" "$urls"
+		fi
+	}
+	
+	echo -e "\nFinished parsing level $(get_current_level)... \n"
+
+	# Increment level after parsing
+	echo $(($(get_current_level)+1)) > $LEVEL_FILE
+}
+
 main(){
-	if [ $# -eq 0 ]; then
-		echo "You must enter an URL!"
-		echo "Usage: $0 <URL>"
-		exit 1
-	fi
-
-	if [ $# -gt 1 ]; then
-		echo "You must enter a single <URL>!"
-		echo "Usage: $0 <URL>"
-		exit 1
-	fi
-
 	local url="$1"
 	local current_level=$(get_current_level)
 	echo "Current level: $current_level"
 
 
-	if [ "$current_level" -eq 0 ]; then
+	if [ "$current_level" -eq 0  ]; then
+		if [ $# -eq 0 ]; then
+			echo "You must enter an URL!"
+			echo "Usage: $0 <URL>"
+			exit 1
+		fi
+
+		if [ $# -gt 1 ]; then
+			echo "You must enter a single <URL>!"
+			echo "Usage: $0 <URL>"
+			exit 1
+		fi
+
 		echo "--- Level 0: Downloading root file ---"
 		local output_file="$DOWNLOADS_DIR/downloaded.html"
 
@@ -121,11 +174,12 @@ main(){
 		save_promises "1" "$urls"
 		echo "Promises saved to $PROMISES_FILE"
 		echo "1" > "$LEVEL_FILE"
-	
 	else
 		echo "--- Level $current_level: Processing promises ---"
+		parse_promises
 	fi
 }
 
-init_level
-main "$@"	#calls the main function and passes all command-line arguments to it
+init "$@" 
+main "$@"
+
