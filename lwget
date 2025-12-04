@@ -37,7 +37,7 @@ USAGE:
 OPTIONS:
    <URL>        The base URL where download starts. Only HTTP and HTTPS are accepted. (REQUIRED)
    -h, --help   Print help instructions.
-   --reset      Deletes working directory (lwget_cache) and resets progress.
+   -r      		Deletes working directory (lwget_cache) and resets progress.
 
 DEPENDENCIES:
    wget, grep, awk, cut
