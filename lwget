@@ -71,7 +71,9 @@ save_promises(){
 	local level=$(get_current_level)
 	local urls="$2"
 	while read -r url; do
-		echo "$level|$url" >> "$PROMISES_FILE"
+		if ! grep -Fq "|$url" "$PROMISES_FILE"; then
+            echo "$level|$url" >> "$PROMISES_FILE"
+        fi
 	done <<< "$urls"
 }
 
@@ -83,7 +85,12 @@ reset_meta() {
 
 	if [ -f "$PROMISES_FILE" ]; then
 		rm "$PROMISES_FILE"
-		echo -e "Cleared promises meta before initialization \n"
+		echo -e "Cleared promises meta before initialization"
+	fi
+
+	if [ -d "$DOWNLOADS_DIR/assets" ]; then
+		rm -r "$DOWNLOADS_DIR/assets"
+		echo -e "Cleared assets before initialization \n"
 	fi
 
 	exit 0
@@ -101,7 +108,7 @@ init(){
 
 	if [ ! -f "$PROMISES_FILE" ]; then
 		touch "$PROMISES_FILE"
-		echo -e "Initialized promises at level 0 \n"
+		echo -e "Initialized promises\n"
 	fi
 }
 
@@ -115,12 +122,27 @@ parse_promises() {
 	{
 		echo $item
 		url=$item
-		if [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg)$ ]]; then 
+
+		if [[ "$item" =~ \.(html)$ ]]; then 
+			# Download file
+			resource_name=$(basename "$url")
+			local assets_dir="$DOWNLOADS_DIR/assets"
+			mkdir -p "$assets_dir"
+			wget -q -nc -x -P "$assets_dir" "$url"
+
+			# Check all links and save as promises
+			local output_file="$DOWNLOADS_DIR/downloaded.html"
+			download_file "$url" "$output_file"
+			local urls=$(extract_links "$output_file")
+			save_promises "$(get_current_level)" "$urls"
+		elif [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg|json|xml|txt|map|jpeg|gif|webp|bmp|ico|tiff|doc|docx|xls|xlsx|csv|ppt|pptx|mp3|mp4|wav|webm|m4a)$ ]]; then 
+			# Download file
 			resource_name=$(basename "$url")
 			local assets_dir="$DOWNLOADS_DIR/assets"
 			mkdir -p "$assets_dir"
 			wget -q -nc -x -P "$assets_dir" "$url"
 		else 
+			# Check all links and save as promises
 			local output_file="$DOWNLOADS_DIR/downloaded.html"
 			download_file "$url" "$output_file"
 			local urls=$(extract_links "$output_file")
@@ -137,7 +159,6 @@ parse_promises() {
 main(){
 	local url="$1"
 	local current_level=$(get_current_level)
-	echo "Current level: $current_level"
 
 	if [ "$current_level" -eq 0  ]; then
 		if [ $# -eq 0 ]; then
@@ -152,11 +173,10 @@ main(){
 			exit 1
 		fi
 
-		echo "--- Level 0: Downloading root file ---"
+		echo -e "--- Level 0: Downloading root file ---\n"
 		local output_file="$DOWNLOADS_DIR/downloaded.html"
 
 		download_file "$url" "$output_file"
-		echo ""
 		echo "Download complete!"
 		echo ""
 	
@@ -169,7 +189,7 @@ main(){
 		echo "Promises saved to $PROMISES_FILE"
 		echo "1" > "$LEVEL_FILE"
 	else
-		echo "--- Level $current_level: Processing promises ---"
+		echo -e "--- Level $current_level: Processing promises ---\n"
 		parse_promises
 	fi
 }
