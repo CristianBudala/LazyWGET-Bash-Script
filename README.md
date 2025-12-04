@@ -13,7 +13,8 @@
 ├── 'Requirements.md'
 ```
 
-2. How it works:
+2. How it works?
+
 The script begins by recursively creating the working directories, starting from the 'Parent Directories'.
 
 Initially, we check if the user has provided the '-h' / '--help' argument, in which case we call the 'usage' function to print the script's usage instructions to stdout. Although using the 'echo' command might have been more intuitive, we used 'cat << EOF [...] EOF' due to the greater flexibility it offers for text formatting. Thus, we redirect the text from standard input to the 'cat' command up to the EOF delimiter. Additionally, if the user has not provided any arguments, the program prints an error and terminates execution with exit code 1.
