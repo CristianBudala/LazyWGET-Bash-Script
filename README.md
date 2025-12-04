@@ -4,6 +4,7 @@
 === RO ===
 1. Structura fișierelor
 
+```
 ├── 'lwget'
 ├── 'lwget_cache'
 │   ├── '/downloads'
@@ -12,6 +13,7 @@
 │		└── '/current_level'
 ├── 'README.md'
 ├── 'Requirements.md'
+```
 
 2. Cum funcționează?
 
