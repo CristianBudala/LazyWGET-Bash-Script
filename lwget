@@ -1,10 +1,23 @@
 #!/bin/bash
+# -----------------------------------------------------------
+# TITLE: LazyWGET - Lazy, recursive HTML file download
+# AUTHORS: Cristian Budala, Ruslan Gaitur
+# DATE: 2025-12
+# -----------------------------------------------------------
+# DESCRIPTION:
+# This script performs recursive, breadth-first download of HTML
+# files from a given URL, advancing one level of depth further for each run
+#
+# USAGE:
+# ./lwget <URL>
+# ./lwget --reset (to clear the cache)
+	#
+# DEPENDENCIES:
+# - wget: Used for downloading the files
+# - grep, awk, cut: Used for link extraction and promise processing & management
+# -----------------------------------------------------------
 
-# LazyWGET - Lazy, recursive HTML file download
-# Authors: Cristian Budala, Ruslan Gaitur
-# Date: 12.2025
-
-# Configuration files
+### CONFIG. FILES ###
 WORK_DIR="./lwget_cache"
 DOWNLOADS_DIR="$WORK_DIR/downloads"
 METADATA_DIR="$WORK_DIR/.metadata" # hidden file
@@ -13,6 +26,29 @@ LEVEL_FILE="$METADATA_DIR/current_level"
 
 mkdir -p "$DOWNLOADS_DIR"
 mkdir -p "$METADATA_DIR"
+# -----------------------------------------------------------
+
+usage(){
+	cat << EOF
+
+USAGE:
+   ./lwget <URL>
+
+OPTIONS:
+   <URL>        The base URL where download starts. Only HTTP and HTTPS are accepted. (REQUIRED)
+   -h, --help   Print help instructions.
+   --reset      Deletes working directory (lwget_cache) and resets progress.
+
+DEPENDENCIES:
+   wget, grep, awk, cut
+
+EOF
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+	usage
+	exit 0
+fi
 
 download_file(){
 	local url="$1"
@@ -41,34 +77,54 @@ init_level(){
 	fi
 }
 
-current_level(){
-	# Read the number from LEVEL_FILE
-	# Also make main() work along with it
+get_current_level(){
+	cat "$LEVEL_FILE"
+}
+
+get_promises_for_level(){
+	local level="$1"
+	grep "^$level|" "$PROMISES_FILE" | cut -d "|" -f 2
 }
 
 main(){
-	if [ $# -eq 0 ]; then	# $# stands for the number of arguments entered by the user
+	if [ $# -eq 0 ]; then
 		echo "You must enter an URL!"
 		echo "Usage: $0 <URL>"
 		exit 1
 	fi
 
+	if [ $# -gt 1 ]; then
+		echo "You must enter a single <URL>!"
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+
 	local url="$1"
-	
-	local output_file="$DOWNLOADS_DIR/downloaded.html"	#./lwget_cache/downloads/downloaded.html
+	local current_level=$(get_current_level)
+	echo "Current level: $current_level"
 
-	download_file "$url" "$output_file"
-	echo ""
-	echo "Download complete!"
-	echo ""
-	
-	local urls=$(extract_links "$output_file")
-	echo "Found links:"
-	echo "$urls"
-	echo ""
 
-	save_promises "1" "$urls"
-	echo "Promises saved to $PROMISES_FILE"
+	if [ "$current_level" -eq 0 ]; then
+		echo "--- Level 0: Downloading root file ---"
+		local output_file="$DOWNLOADS_DIR/downloaded.html"
+
+		download_file "$url" "$output_file"
+		echo ""
+		echo "Download complete!"
+		echo ""
+	
+		local urls=$(extract_links "$output_file")
+		echo "Found links:"
+		echo "$urls"
+		echo ""
+
+		save_promises "1" "$urls"
+		echo "Promises saved to $PROMISES_FILE"
+		echo "1" > "$LEVEL_FILE"
+	
+	else
+		echo "--- Level $current_level: Processing promises ---"
+	fi
 }
 
 init_level
