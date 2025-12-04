@@ -30,7 +30,7 @@ The depth level is initialized to 0 via the 'init' function and incremented with
 ├── 'lwget'
 ├── 'lwget_cache'
 │   ├── '/downloads'
-│   └── '/.assets'
+│   └── '/assets'
 │   ├── '/.metadata'
 │     	├── '/promises.txt'
 │		└── '/current_level'
