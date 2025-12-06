@@ -10,12 +10,16 @@
 #
 # USAGE:
 # ./lwget <URL>
-# ./lwget --reset (to clear the cache)
-	#
+# 
+# OPTIONS:
+# ./lwget -h/--help
+# ./lwget -r/--reset
+#
 # DEPENDENCIES:
 # - wget: Used for downloading the files
 # - grep, awk, cut: Used for link extraction and promise processing & management
 # -----------------------------------------------------------
+
 
 ### CONFIG. FILES ###
 WORK_DIR="./lwget_cache"
@@ -26,6 +30,7 @@ LEVEL_FILE="$METADATA_DIR/current_level.txt"
 
 mkdir -p "$DOWNLOADS_DIR"
 mkdir -p "$METADATA_DIR"
+
 # -----------------------------------------------------------
 
 usage(){
@@ -37,7 +42,7 @@ USAGE:
 OPTIONS:
    <URL>        The base URL where download starts. Only HTTP and HTTPS are accepted. (REQUIRED)
    -h, --help   Print help instructions.
-   -r      		Deletes working directory (lwget_cache) and resets progress.
+   -r, --reset  Deletes working directory (lwget_cache) and resets progress.
 
 DEPENDENCIES:
    wget, grep, awk, cut
@@ -51,25 +56,24 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 fi
 
 download_file(){
-	< $DOWNLOADS_DIR
 	local url="$1"
 	local output_file="$2"
-	wget -q -O "$output_file" "$url" # no output (quiet), writes documents to file: -O
+	wget -q -O "$output_file" "$url"
 }
 
 extract_links(){
     local filename="$1"
-	# from the html file, grep prints to stdout only the matching part (-o) of links (not the entire html declaration of the object), splits it by " and prints the second argument
     grep -o 'href="http[^"]*"' "$filename" | awk -F'"' '{print $2}'
 }
 
 get_current_level(){
-	cat < $LEVEL_FILE
+	cat "$LEVEL_FILE"
 }
 
 save_promises(){
-	local level=$(get_current_level)
+	local level="$1"
 	local urls="$2"
+
 	while read -r url; do
 		if ! grep -Fq "|$url" "$PROMISES_FILE"; then
             echo "$level|$url" >> "$PROMISES_FILE"
@@ -78,21 +82,12 @@ save_promises(){
 }
 
 reset_meta() {
-	if [ -f "$LEVEL_FILE" ]; then
-		rm "$LEVEL_FILE"
-		echo "Cleared level meta before initialization"
+	if [ -d "$WORK_DIR" ]; then
+		rm -rf "$WORK_DIR"
+		echo -e "Cleared working directory: $WORK_DIR\n"
+	else
+		echo -e "No working directory to clear.\n"
 	fi
-
-	if [ -f "$PROMISES_FILE" ]; then
-		rm "$PROMISES_FILE"
-		echo -e "Cleared promises meta before initialization"
-	fi
-
-	if [ -d "$DOWNLOADS_DIR/assets" ]; then
-		rm -r "$DOWNLOADS_DIR/assets"
-		echo -e "Cleared assets before initialization \n"
-	fi
-
 	exit 0
 }
 
@@ -108,7 +103,7 @@ init(){
 
 	if [ ! -f "$PROMISES_FILE" ]; then
 		touch "$PROMISES_FILE"
-		echo -e "Initialized promises\n"
+		echo -e "Initialized promises file\n"
 	fi
 }
 
@@ -118,42 +113,37 @@ get_promises_for_level(){
 }
 
 parse_promises() {
-	for item in $(get_promises_for_level $(($(get_current_level) - 1)))
-	{
-		echo $item
-		url=$item
-
-		if [[ "$item" =~ \.(html)$ ]]; then 
-			# Download file
-			resource_name=$(basename "$url")
-			local assets_dir="$DOWNLOADS_DIR/assets"
-			mkdir -p "$assets_dir"
-			wget -q -nc -x -P "$assets_dir" "$url"
-
-			# Check all links and save as promises
-			local output_file="$DOWNLOADS_DIR/downloaded.html"
-			download_file "$url" "$output_file"
-			local urls=$(extract_links "$output_file")
-			save_promises "$(get_current_level)" "$urls"
-		elif [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg|json|xml|txt|map|jpeg|gif|webp|bmp|ico|tiff|doc|docx|xls|xlsx|csv|ppt|pptx|mp3|mp4|wav|webm|m4a)$ ]]; then 
-			# Download file
-			resource_name=$(basename "$url")
-			local assets_dir="$DOWNLOADS_DIR/assets"
-			mkdir -p "$assets_dir"
-			wget -q -nc -x -P "$assets_dir" "$url"
-		else 
-			# Check all links and save as promises
-			local output_file="$DOWNLOADS_DIR/downloaded.html"
-			download_file "$url" "$output_file"
-			local urls=$(extract_links "$output_file")
-			save_promises "$(get_current_level)" "$urls"
-		fi
-	}
-	
-	echo -e "\nFinished parsing level $(get_current_level)... \n"
-
-	# Increment level after parsing
-	echo $(($(get_current_level)+1)) > $LEVEL_FILE
+    local current_level=$(get_current_level)
+    local next_level=$((current_level + 1))
+    
+    for item in $(get_promises_for_level "$current_level")
+    {
+        echo $item
+        url=$item
+        if [[ "$item" =~ \.(html)$ ]]; then 
+            resource_name=$(basename "$url")
+            local assets_dir="$DOWNLOADS_DIR/assets"
+            mkdir -p "$assets_dir"
+            wget -q -nc -x -P "$assets_dir" "$url"
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
+        elif [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg|json|xml|txt|map|jpeg|gif|webp|bmp|ico|tiff|doc|docx|xls|xlsx|csv|ppt|pptx|mp3|mp4|wav|webm|m4a)$ ]]; then 
+            resource_name=$(basename "$url")
+            local assets_dir="$DOWNLOADS_DIR/assets"
+            mkdir -p "$assets_dir"
+            wget -q -nc -x -P "$assets_dir" "$url"
+        else 
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
+        fi
+    }
+    
+    echo -e "\nFinished parsing level $current_level... \n"
+    echo "$next_level" > "$LEVEL_FILE"
 }
 
 main(){
