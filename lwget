@@ -27,10 +27,6 @@ DOWNLOADS_DIR="$WORK_DIR/downloads"
 METADATA_DIR="$WORK_DIR/.metadata" # hidden file
 PROMISES_FILE="$METADATA_DIR/promises.txt"
 LEVEL_FILE="$METADATA_DIR/current_level.txt"
-
-mkdir -p "$DOWNLOADS_DIR"
-mkdir -p "$METADATA_DIR"
-
 # -----------------------------------------------------------
 
 usage(){
@@ -49,11 +45,6 @@ DEPENDENCIES:
 
 EOF
 }
-
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-	usage
-	exit 0
-fi
 
 download_file(){
 	local url="$1"
@@ -91,11 +82,10 @@ reset_meta() {
 	exit 0
 }
 
-if [ "$1" == "-r" ]; then
-	reset_meta
-fi
-
 init(){
+	mkdir -p "$DOWNLOADS_DIR"
+	mkdir -p "$METADATA_DIR"
+
 	if [ ! -f "$LEVEL_FILE" ]; then
 		echo "0" > "$LEVEL_FILE"
 		echo "Initialized level 0"
@@ -151,18 +141,6 @@ main(){
 	local current_level=$(get_current_level)
 
 	if [ "$current_level" -eq 0  ]; then
-		if [ $# -eq 0 ]; then
-			echo "You must enter an URL!"
-			echo "Usage: $0 <URL>"
-			exit 1
-		fi
-
-		if [ $# -gt 1 ]; then
-			echo "You must enter a single <URL>!"
-			echo "Usage: $0 <URL>"
-			exit 1
-		fi
-
 		echo -e "--- Level 0: Downloading root file ---\n"
 		local output_file="$DOWNLOADS_DIR/downloaded.html"
 
@@ -183,6 +161,29 @@ main(){
 		parse_promises
 	fi
 }
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+	usage
+	exit 0
+fi
+
+if [ "$1" == "-r" ]; then
+	reset_meta
+fi
+
+if [ ! -d "$WORK_DIR" ] || [ ! -f "$LEVEL_FILE" ]; then
+	if [ $# -eq 0 ]; then
+		echo "You must enter an URL!"
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+
+	if [ $# -gt 1 ]; then
+		echo "You must enter a single <URL>!"
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+fi
 
 init "$@" 
 main "$@"
