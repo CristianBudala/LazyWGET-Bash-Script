@@ -79,7 +79,6 @@ reset_meta() {
 	else
 		echo -e "No working directory to clear.\n"
 	fi
-	exit 0
 }
 
 init(){
@@ -105,36 +104,33 @@ get_promises_for_level(){
 parse_promises() {
     local current_level=$(get_current_level)
     local next_level=$((current_level + 1))
-
+    
     for item in $(get_promises_for_level "$current_level")
     {
         echo $item
         url=$item
-
-        if [[ "$item" =~ \.(html)$ ]]; then
-            wget -q -nc -x -P "$DOWNLOADS_DIR" "$url"
-
-            local domain=$(echo "$url" | sed 's|https\?://||' | cut -d'/' -f1)
-            local path=$(echo "$url" | sed 's|https\?://[^/]*/||')
-
-            if [[ "$url" == */ ]]; then
-                path="${path}index.html"
-            fi
-
-            local saved_file="$DOWNLOADS_DIR/$domain/$path"
-
-            if [ -f "$saved_file" ]; then
-                local urls=$(extract_links "$saved_file")
-                save_promises "$next_level" "$urls"
-            fi
-
-        else
+        if [[ "$item" =~ \.(html)$ ]]; then 
+            resource_name=$(basename "$url")
             local assets_dir="$DOWNLOADS_DIR/assets"
             mkdir -p "$assets_dir"
             wget -q -nc -x -P "$assets_dir" "$url"
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
+        elif [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg|json|xml|txt|map|jpeg|gif|webp|bmp|ico|tiff|doc|docx|xls|xlsx|csv|ppt|pptx|mp3|mp4|wav|webm|m4a)$ ]]; then 
+            resource_name=$(basename "$url")
+            local assets_dir="$DOWNLOADS_DIR/assets"
+            mkdir -p "$assets_dir"
+            wget -q -nc -x -P "$assets_dir" "$url"
+        else 
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
         fi
     }
-
+    
     echo -e "\nFinished parsing level $current_level... \n"
     echo "$next_level" > "$LEVEL_FILE"
 }
@@ -170,8 +166,9 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 	exit 0
 fi
 
-if [ "$1" == "-r" || "$1" == "--reset" ]; then
+if [[ "$1" == "-r" || "$1" == "--reset" ]]; then
 	reset_meta
+	exit 0
 fi
 
 if [ ! -d "$WORK_DIR" ] || [ ! -f "$LEVEL_FILE" ]; then
@@ -190,4 +187,3 @@ fi
 
 init "$@" 
 main "$@"
-
