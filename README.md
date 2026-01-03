@@ -1,4 +1,29 @@
-#LazyWGET
+```
+ _                  __        ______ _____ _____ 
+| |    __ _ _____   \ \      / / ___| ____|_   _|
+| |   / _` |_  / | | \ \ /\ / / |  _|  _|   | |  
+| |__| (_| |/ /| |_| |\ V  V /| |_| | |___  | |  
+|_____\__,_/___|\__, | \_/\_/  \____|_____| |_|  
+                |___/                            
+```
+
+# LazyWGET
+LazyWGET is a Bash script that performs a Breadth-First Search (BFS) traversal of a tree whose root is the first URL entered by the user, while the nodes represent references (HREFs) from the previous level. The script downloads the references (promises) one depth level at a time, stopping execution after each level.
+
+The script is designed to be:
+
+- **Sequential:** It does not automatically execute the entire tree recursively. It waits for the user's input before moving to depth \(N + 1\).
+- **Programmatic:** It preserves the state of the processing queue as a database of URLs (promises).
+- **Efficient:** It prevents circular loops by checking the browsing history before adding new URLs to the queue.
+
+## ⬇️ Installation
+1. Clone the repository
+2. 
+
+
+
+
+
 1. File structure
 
 ```
