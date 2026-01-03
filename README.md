@@ -1,13 +1,15 @@
 ```
  _                  __        ______ _____ _____ 
 | |    __ _ _____   \ \      / / ___| ____|_   _|
-| |   / _` |_  / | | \ \ /\ / / |  _|  _|   | |  
-| |__| (_| |/ /| |_| |\ V  V /| |_| | |___  | |  
-|_____\__,_/___|\__, | \_/\_/  \____|_____| |_|  
-                |___/                            
+| |   / _` |_  / | | \ \ /\ / / |  _|  _|   | |            University of Bucharest
+| |__| (_| |/ /| |_| |\ V  V /| |_| | |___  | |            Department of Computer Science
+|_____\__,_/___|\__, | \_/\_/  \____|_____| |_|            Year 1, Sem 1: Intro to Computer Science
+                |___/                                      
 ```
 
-# LazyWGET
+
+
+## 🔮 Overview
 LazyWGET is a Bash script that performs a Breadth-First Search (BFS) traversal of a tree whose root is the first URL entered by the user, while the nodes represent references (HREFs) from the previous level. The script downloads the references (promises) one depth level at a time, stopping execution after each level.
 
 The script is designed to be:
@@ -16,48 +18,84 @@ The script is designed to be:
 - **Programmatic:** It preserves the state of the processing queue as a database of URLs (promises).
 - **Efficient:** It prevents circular loops by checking the browsing history before adding new URLs to the queue.
 
-## ⬇️ Installation
+## ⬇️ Installation and Usage
 1. Clone the repository
-2. 
+2. Dependencies:
+Make sure the following standard Linux utilities are installed on your system:
 
+- **bash** (Shell environment)
+- **wget** (Network download tool)
+- **grep, awk, cut** (Text-processing pipelines)
 
+3. In action:
 
+    | ./lwget URL |
+    |---|
+    | <img src="lwget-usage.gif" width="500"> |
 
+4. Reset & Help:
+   
+    To clear the cache, remove downloaded files, and reset the depth counter back to 0:
+    
+    ```bash
+    ./lwget -r
+    ./lwget --reset
+    ```
 
-1. File structure
+    To receive information on how to correctly use the script:
+    
+    ```bash
+    ./lwget -h
+    ./lwget --help
+    ```
 
+## 📁 Project structure
 ```
-├── 'lwget'
-├── 'lwget_cache'
-│   ├── '/downloads'
-│   └── '/assets'
-│   ├── '/.metadata'
-│     	├── '/promises.txt'
-│		└── '/current_level'
-├── 'README.md'
-├── 'Requirements.md'
+├── lwget
+├── lwget_cache/
+    ├── .metadata/                # Stores the internal state and metadata
+         ├── current_level.txt    # Stores current level for parsing
+         ├── promises.txt         # Database of promises, sorted by their depth level
+    ├── downloads/                # Stores downloaded content
+         ├── downloaded.html      # Most recently downloaded HTML file
+         ├── assets/              # All downloaded resources
 ```
 
-2. How it works
+| Flowchart |
+|---|
+| <img src="LazyWGET_Flowchart.png" width="700"> |
 
-On the first run, the script downloads only the root HTML file specified by the user. It then parses the file to extract all HTTP/HTTPS links and saves them as "promises" (URLs that will be downloaded later). These promises are stored in a metadata file along with their depth level (level 1). The current recursion level is incremented and saved.
-On the second run, the script reads the promises marked for level 1, downloads each of those files, and extracts links from them. These new links become level 2 promises. The process continues with each subsequent execution, advancing one level deeper into the link hierarchy.
+## ❗ Limitations
+- **URL Detection:**  
+  The script uses `grep` to find links referenced in HTML files. These links are placed directly into the promises database queue. It strictly supports `http` and `https`.
 
-=== RO ===
-1. Structura fișierelor
+- **Asset Detection:**  
+  The script uses Regex (`grep`) to identify file extensions. Known extensions (Table 1) are treated as terminal nodes — they are downloaded but not scanned further for potential promises.
 
-```
-├── 'lwget'
-├── 'lwget_cache'
-│   ├── '/downloads'
-│   └── '/assets'
-│   ├── '/.metadata'
-│     	├── '/promises.txt'
-│		└── '/current_level'
-├── 'README.md'
-├── 'Requirements.md'
-```
+- **Duplicate Handling:**  
+  The script uses `grep -Fq` to scan the promises database before updating it for the next level, ensuring uniqueness of promises.
 
-2. Cum funcționează?
+    | Category | Extensions |
+    | --- | --- |
+    | Images | jpg, jpeg, png, gif, webp, bmp, ico, tiff, svg |
+    | Documents | pdf, doc, docx, xls, xlsx, ppt, pptx, txt, csv |
+    | Code & Data | css, js, json, xml, map |
+    | Media | mp3, mp4, wav, webm, m4a |
+    | Archives | zip |
 
-La prima execuție, scriptul descarcă doar fișierul rădăcină HTML specificat de utilizator, apoi îl analizează pentru a extrage toate linkurile HTTP/HTTPS și le salvează ca "promisiuni" (URL-uri care vor fi descărcate ulterior). Aceste promisiuni sunt stocate într-un fișier de metadate împreună cu nivelul lor de adâncime (nivelul 1). Nivelul curent de recursiune este incrementat și salvat. La a doua rulare, scriptul citește promisiunile marcate pentru nivelul 1, descarcă fișierele respective și extrage linkuri noi din ele. Aceste linkuri devin promisiuni de nivel 2. Procesul continuă cu fiecare execuție ulterioară, avansând în adâncime în ierarhia linkurilor.
+## 🛠️ Troubleshooting
+
+| Problem | Possible Cause | Solution |
+| --- | --- | --- |
+| `You must enter an URL!` | The script was executed without arguments at Level 0. | Provide the root URL: `./lwget <URL>` |
+| `You must enter a single URL!` | More than one root URL was provided at Level 0. | Run `./lwget` with a single root URL. |
+
+## 🎓 Academic Context
+This project was developed as part of the course "Instrumente si Tehnici de Baza in Informatica" (Introduction to Computer Science) from the Faculty of Mathematics and Computer Science at the University of Bucharest.
+
+## 👥 Students Involved
+- Cristian Budala (@CristianBudala)
+- Ruslan Gaitur (@Dontmindmeifido)
+
+## 📝 License
+This project is MIT licensed.
