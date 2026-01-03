@@ -1,4 +1,4 @@
-=== ENG ===
+#LazyWGET
 1. File structure
 
 ```
