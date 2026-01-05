@@ -1,0 +1,189 @@
+#!/bin/bash
+# -----------------------------------------------------------
+# TITLE: LazyWGET - Lazy, recursive HTML file download
+# AUTHORS: Cristian Budala, Ruslan Gaitur
+# DATE: 2025-12
+# -----------------------------------------------------------
+# DESCRIPTION:
+# This script performs recursive, breadth-first download of HTML
+# files from a given URL, advancing one level of depth further for each run
+#
+# USAGE:
+# ./lwget <URL>
+# 
+# OPTIONS:
+# ./lwget -h/--help
+# ./lwget -r/--reset
+#
+# DEPENDENCIES:
+# - wget: Used for downloading the files
+# - grep, awk, cut: Used for link extraction and promise processing & management
+# -----------------------------------------------------------
+
+
+### CONFIG. FILES ###
+WORK_DIR="./lwget_cache"
+DOWNLOADS_DIR="$WORK_DIR/downloads"
+METADATA_DIR="$WORK_DIR/.metadata" # hidden file
+PROMISES_FILE="$METADATA_DIR/promises.txt"
+LEVEL_FILE="$METADATA_DIR/current_level.txt"
+# -----------------------------------------------------------
+
+usage(){
+	cat << EOF
+
+USAGE:
+   ./lwget <URL>
+
+OPTIONS:
+   <URL>        The base URL where download starts. Only HTTP and HTTPS are accepted. (REQUIRED)
+   -h, --help   Print help instructions.
+   -r, --reset  Deletes working directory (lwget_cache) and resets progress.
+
+DEPENDENCIES:
+   wget, grep, awk, cut
+
+EOF
+}
+
+download_file(){
+	local url="$1"
+	local output_file="$2"
+	wget -q -O "$output_file" "$url"
+}
+
+extract_links(){
+    local filename="$1"
+    grep -o 'href="http[^"]*"' "$filename" | awk -F'"' '{print $2}'
+}
+
+get_current_level(){
+	cat "$LEVEL_FILE"
+}
+
+save_promises(){
+	local level="$1"
+	local urls="$2"
+
+	while read -r url; do
+		if ! grep -Fq "|$url" "$PROMISES_FILE"; then
+            echo "$level|$url" >> "$PROMISES_FILE"
+        fi
+	done <<< "$urls"
+}
+
+reset_meta() {
+	if [ -d "$WORK_DIR" ]; then
+		rm -rf "$WORK_DIR"
+		echo -e "Cleared working directory: $WORK_DIR\n"
+	else
+		echo -e "No working directory to clear.\n"
+	fi
+}
+
+init(){
+	mkdir -p "$DOWNLOADS_DIR"
+	mkdir -p "$METADATA_DIR"
+
+	if [ ! -f "$LEVEL_FILE" ]; then
+		echo "0" > "$LEVEL_FILE"
+		echo "Initialized level 0"
+	fi
+
+	if [ ! -f "$PROMISES_FILE" ]; then
+		touch "$PROMISES_FILE"
+		echo -e "Initialized promises file\n"
+	fi
+}
+
+get_promises_for_level(){
+	local level="$1"
+	grep "^$level|" "$PROMISES_FILE" | cut -d "|" -f 2
+}
+
+parse_promises() {
+    local current_level=$(get_current_level)
+    local next_level=$((current_level + 1))
+    
+    for item in $(get_promises_for_level "$current_level")
+    {
+        echo $item
+        url=$item
+        if [[ "$item" =~ \.(html)$ ]]; then 
+            resource_name=$(basename "$url")
+            local assets_dir="$DOWNLOADS_DIR/assets"
+            mkdir -p "$assets_dir"
+            wget -q -nc -x -P "$assets_dir" "$url"
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
+        elif [[ "$item" =~ \.(pdf|jpg|png|zip|css|js|svg|json|xml|txt|map|jpeg|gif|webp|bmp|ico|tiff|doc|docx|xls|xlsx|csv|ppt|pptx|mp3|mp4|wav|webm|m4a)$ ]]; then 
+            resource_name=$(basename "$url")
+            local assets_dir="$DOWNLOADS_DIR/assets"
+            mkdir -p "$assets_dir"
+            wget -q -nc -x -P "$assets_dir" "$url"
+        else 
+            local output_file="$DOWNLOADS_DIR/downloaded.html"
+            download_file "$url" "$output_file"
+            local urls=$(extract_links "$output_file")
+            save_promises "$next_level" "$urls"
+        fi
+    }
+    
+    echo -e "\nFinished parsing level $current_level... \n"
+    echo "$next_level" > "$LEVEL_FILE"
+}
+
+main(){
+	local url="$1"
+	local current_level=$(get_current_level)
+
+	if [ "$current_level" -eq 0  ]; then
+		echo -e "--- Level 0: Downloading root file ---\n"
+		local output_file="$DOWNLOADS_DIR/downloaded.html"
+
+		download_file "$url" "$output_file"
+		echo "Download complete!"
+		echo ""
+	
+		local urls=$(extract_links "$output_file")
+		echo "Found links:"
+		echo "$urls"
+		echo ""
+
+		save_promises "1" "$urls"
+		echo "Promises saved to $PROMISES_FILE"
+		echo "1" > "$LEVEL_FILE"
+	else
+		echo -e "--- Level $current_level: Processing promises ---\n"
+		parse_promises
+	fi
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+	usage
+	exit 0
+fi
+
+if [[ "$1" == "-r" || "$1" == "--reset" ]]; then
+	reset_meta
+	exit 0
+fi
+
+if [ ! -d "$WORK_DIR" ] || [ ! -f "$LEVEL_FILE" ]; then
+	if [ $# -eq 0 ]; then
+		echo "You must enter an URL!"
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+
+	if [ $# -gt 1 ]; then
+		echo "You must enter a single <URL>!"
+		echo "Usage: $0 <URL>"
+		exit 1
+	fi
+fi
+
+init "$@" 
+main "$@"

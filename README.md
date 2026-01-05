@@ -31,7 +31,7 @@ Make sure the following standard Linux utilities are installed on your system:
 
     | ./lwget URL |
     |---|
-    | <img src="lwget-usage.gif" width="500"> |
+    | <img src="attributes/lwget-usage.gif" width="500"> |
 
 4. Reset & Help:
    
@@ -63,7 +63,7 @@ Make sure the following standard Linux utilities are installed on your system:
 
 | Flowchart |
 |---|
-| <img src="LazyWGET_Flowchart.png" width="700"> |
+| <img src="attributes/LazyWGET_Flowchart.png" width="700"> |
 
 ## ❗ Limitations
 - **URL Detection:**  
