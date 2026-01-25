@@ -18,6 +18,8 @@ The script is designed to be:
 - **Programmatic:** It preserves the state of the processing queue as a database of URLs (promises).
 - **Efficient:** It prevents circular loops by checking the browsing history before adding new URLs to the queue.
 
+🎓 This project was developed as part of the course "Introduction to Computer Science", under the supervision of [Prof. PhD. Vlad OLARU](https://ieeexplore.ieee.org/author/37274207900), at the Department for Mathematics and Computer Science, University of Bucharest.
+
 ## ⬇️ Installation and Usage
 1. Clone the repository
 2. Dependencies:
@@ -89,9 +91,6 @@ Make sure the following standard Linux utilities are installed on your system:
 | --- | --- | --- |
 | `You must enter an URL!` | The script was executed without arguments at Level 0. | Provide the root URL: `./lwget <URL>` |
 | `You must enter a single URL!` | More than one root URL was provided at Level 0. | Run `./lwget` with a single root URL. |
-
-## 🎓 Academic Context
-This project was developed as part of the course "Instrumente si Tehnici de Baza in Informatica" (Introduction to Computer Science) from the Faculty of Mathematics and Computer Science at the University of Bucharest.
 
 ## 👥 Students Involved
 - Cristian Budala (@CristianBudala)
